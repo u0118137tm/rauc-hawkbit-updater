@@ -12,3 +12,4 @@ build/
 # tests
 venv/
 test/__pycache__/
+config.conf

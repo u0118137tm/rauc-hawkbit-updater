@@ -1139,7 +1139,7 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
         g_autoptr(Artifact) artifact = g_new0(Artifact, 1);
         g_autofree gchar *deployment = NULL, *temp_id = NULL,
                          *deployment_download = NULL, *deployment_update = NULL,
-                         *maintenance_window = NULL, *maintenance_msg = NULL;
+                         *maintenance_window = NULL, *maintenance_msg = NULL, *download_url_extension_check = NULL;
         g_autoptr(JsonParser) json_response_parser = NULL;
         g_autoptr(JsonArray) json_chunks = NULL, json_artifacts = NULL;
         JsonNode *resp_root = NULL, *json_chunk = NULL, *json_artifact = NULL;
@@ -1278,7 +1278,6 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
         
         g_message("Download URL: %s",artifact->download_url);
 
-        char *download_url_extension_check = NULL;
         download_url_extension_check = strrchr(artifact->download_url, '.');
         if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
                 g_message("Check for .raucb extension in artifact failed.");
