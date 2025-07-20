@@ -341,7 +341,7 @@ Config* load_config_file(const gchar *config_file, GError **error)
         if (!get_key_bool(ini_file, "client", "post_update_reboot", &config->post_update_reboot, DEFAULT_REBOOT, error))
                 return NULL;
 
-        if (!get_key_bool(ini_file, "client", "os_only", &config->os_only, FALSE,
+        if (!get_key_bool(ini_file, "client", "raucb_check", &config->raucb_check, FALSE,
                           error))
                 return NULL;
 

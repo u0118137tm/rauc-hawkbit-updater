@@ -21,7 +21,7 @@ typedef struct Config_ {
         gboolean post_update_reboot;      /**< reboot system after successful update */
         gboolean resume_downloads;        /**< resume downloads or not */
         gboolean stream_bundle;           /**< streaming installation or not */
-        gboolean os_only;                 /**< only os updates in hawkbit server */
+        gboolean raucb_check;             /**< check if the download file has the .raucb extension */
         gchar* auth_token;                /**< hawkBit target security token */
         gchar* gateway_token;             /**< hawkBit gateway security token */
         gchar* tenant_id;                 /**< hawkBit tenant id */

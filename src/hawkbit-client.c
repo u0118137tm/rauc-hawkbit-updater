@@ -1163,8 +1163,6 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
         if (!deployment)
                 goto error;
 
-        g_message("%s", deployment);
-
         // get deployment resource
         if (!rest_request(GET, deployment, NULL, &json_response_parser, error))
                 goto error;
@@ -1274,6 +1272,18 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
         if (!artifact->download_url) {
                 g_prefix_error(error, "\"$._links.download{-http,}.href\": ");
                 goto proc_error;
+        }
+
+
+        
+        g_message("Download URL: %s",artifact->download_url);
+        g_autofree gchar *download_url_extension_check = NULL;
+        download_url_extension_check = strrchr(artifact->download_url, '.');
+        if (download_url_extension_check && !strcmp(download_url_extension_check, ".raucb")){
+                g_message("ends with .raucb");
+        }
+        else{
+                g_message("does not end with .raucb");
         }
 
         g_message("New software ready for download (Name: %s, Version: %s, Size: %" G_GINT64_FORMAT " bytes, URL: %s)",
