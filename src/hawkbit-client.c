@@ -1281,7 +1281,7 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
         download_url_extension_check = strrchr(artifact->download_url, '.');
         if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
                 g_message("Check for .raucb extension in artifact failed.");
-                return TRUE;
+                goto proc_error;
                 
         }
 
