@@ -1448,7 +1448,12 @@ static gboolean hawkbit_pull_cb(gpointer user_data)
         // build hawkBit get tasks URL
         get_tasks_url = build_api_url(NULL);
 
-        g_message("Checking for new software - custom 2...");
+        if(hawkbit_config->os_only){
+                g_message("Checking for new software - OS only");
+        }
+        else{
+                g_message("Checking for new software - OS and application");
+        }
         res = rest_request(GET, get_tasks_url, NULL, &json_response_parser, &error);
         if (!res) {
                 if (g_error_matches(error, RHU_HAWKBIT_CLIENT_HTTP_ERROR, 401)) {
