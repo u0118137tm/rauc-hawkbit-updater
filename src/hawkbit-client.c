@@ -1277,13 +1277,13 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
 
         
         g_message("Download URL: %s",artifact->download_url);
-        g_autofree gchar *download_url_extension_check = NULL;
+
+        char *download_url_extension_check = NULL;
         download_url_extension_check = strrchr(artifact->download_url, '.');
-        if (download_url_extension_check && !strcmp(download_url_extension_check, ".raucb")){
-                g_message("ends with .raucb");
-        }
-        else{
-                g_message("does not end with .raucb");
+        if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
+                g_message("Check for .raucb extension in artifact failed.");
+                return TRUE;
+                
         }
 
         g_message("New software ready for download (Name: %s, Version: %s, Size: %" G_GINT64_FORMAT " bytes, URL: %s)",
