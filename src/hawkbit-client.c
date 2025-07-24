@@ -937,7 +937,7 @@ static gpointer download_thread(gpointer data)
                 .install_success = FALSE,
         };
         g_autoptr(GError) error = NULL, feedback_error = NULL;
-        g_autofree gchar *msg = NULL, *sha1sum = NULL;
+        g_autofree gchar *msg = NULL, *sha1sum = NULL, *download_url_extension_check = NULL;
         g_autoptr(Artifact) artifact = data;
         curl_off_t speed;
 
@@ -1040,14 +1040,23 @@ static gpointer download_thread(gpointer data)
                 return GINT_TO_POINTER(TRUE);
         }
 
-        // start installation, cancelations are impossible now
-        active_action->state = ACTION_STATE_INSTALLING;
-        g_cond_signal(&active_action->cond);
-        g_mutex_unlock(&active_action->mutex);
+        g_message("Download URL: %s",artifact->download_url);
+        download_url_extension_check = strrchr(artifact->download_url, '.');
+        if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
+                g_message("Processing tar software update bundle");
+                userdata.install_success = TRUE;
+                return GINT_TO_POINTER(userdata.install_success);
+        }
+        else{
+                // start installation, cancelations are impossible now
+                active_action->state = ACTION_STATE_INSTALLING;
+                g_cond_signal(&active_action->cond);
+                g_mutex_unlock(&active_action->mutex);
 
-        software_ready_cb(&userdata);
+                software_ready_cb(&userdata);
 
-        return GINT_TO_POINTER(userdata.install_success);
+                return GINT_TO_POINTER(userdata.install_success);
+        }
 
 report_err:
         g_mutex_lock(&active_action->mutex);
@@ -1139,7 +1148,7 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
         g_autoptr(Artifact) artifact = g_new0(Artifact, 1);
         g_autofree gchar *deployment = NULL, *temp_id = NULL,
                          *deployment_download = NULL, *deployment_update = NULL,
-                         *maintenance_window = NULL, *maintenance_msg = NULL, *download_url_extension_check = NULL;
+                         *maintenance_window = NULL, *maintenance_msg = NULL;
         g_autoptr(JsonParser) json_response_parser = NULL;
         g_autoptr(JsonArray) json_chunks = NULL, json_artifacts = NULL;
         JsonNode *resp_root = NULL, *json_chunk = NULL, *json_artifact = NULL;
@@ -1276,14 +1285,7 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
 
 
         
-        g_message("Download URL: %s",artifact->download_url);
 
-        download_url_extension_check = strrchr(artifact->download_url, '.');
-        if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
-                g_message("Check for .raucb extension in artifact failed.");
-                goto proc_error;
-                
-        }
 
         g_message("New software ready for download (Name: %s, Version: %s, Size: %" G_GINT64_FORMAT " bytes, URL: %s)",
                   artifact->name, artifact->version, artifact->size, artifact->download_url);
