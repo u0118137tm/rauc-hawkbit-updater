@@ -1044,7 +1044,14 @@ static gpointer download_thread(gpointer data)
         download_url_extension_check = strrchr(artifact->download_url, '.');
         if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
                 g_message("Processing tar software update bundle");
+
                 userdata.install_success = TRUE;
+
+                install_complete_cb(&userdata);
+
+                // notify_hawkbit_install_progress(&userdata);
+                // notify_hawkbit_install_complete(&userdata);
+
                 return GINT_TO_POINTER(userdata.install_success);
         }
         else{
