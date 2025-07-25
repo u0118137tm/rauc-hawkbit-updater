@@ -937,7 +937,7 @@ static gpointer download_thread(gpointer data)
                 .install_success = FALSE,
         };
         g_autoptr(GError) error = NULL, feedback_error = NULL;
-        g_autofree gchar *msg = NULL, *sha1sum = NULL, *download_url_extension_check = NULL;
+        g_autofree gchar *msg = NULL, *sha1sum = NULL;
         g_autoptr(Artifact) artifact = data;
         curl_off_t speed;
 
@@ -1040,30 +1040,14 @@ static gpointer download_thread(gpointer data)
                 return GINT_TO_POINTER(TRUE);
         }
 
-        g_message("Download URL: %s",artifact->download_url);
-        download_url_extension_check = strrchr(artifact->download_url, '.');
-        if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
-                g_message("Processing tar software update bundle");
+        // start installation, cancelations are impossible now
+        active_action->state = ACTION_STATE_INSTALLING;
+        g_cond_signal(&active_action->cond);
+        g_mutex_unlock(&active_action->mutex);
 
-                userdata.install_success = TRUE;
+        software_ready_cb(&userdata);
 
-                install_complete_cb(&userdata);
-
-                // notify_hawkbit_install_progress(&userdata);
-                // notify_hawkbit_install_complete(&userdata);
-
-                return GINT_TO_POINTER(userdata.install_success);
-        }
-        else{
-                // start installation, cancelations are impossible now
-                active_action->state = ACTION_STATE_INSTALLING;
-                g_cond_signal(&active_action->cond);
-                g_mutex_unlock(&active_action->mutex);
-
-                software_ready_cb(&userdata);
-
-                return GINT_TO_POINTER(userdata.install_success);
-        }
+        return GINT_TO_POINTER(userdata.install_success);
 
 report_err:
         g_mutex_lock(&active_action->mutex);
@@ -1290,10 +1274,6 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
                 goto proc_error;
         }
 
-
-        
-
-
         g_message("New software ready for download (Name: %s, Version: %s, Size: %" G_GINT64_FORMAT " bytes, URL: %s)",
                   artifact->name, artifact->version, artifact->size, artifact->download_url);
 
@@ -1468,7 +1448,7 @@ static gboolean hawkbit_pull_cb(gpointer user_data)
         // build hawkBit get tasks URL
         get_tasks_url = build_api_url(NULL);
 
-        g_message("Checking for new software");
+        g_message("Checking for new software...");
         res = rest_request(GET, get_tasks_url, NULL, &json_response_parser, &error);
         if (!res) {
                 if (g_error_matches(error, RHU_HAWKBIT_CLIENT_HTTP_ERROR, 401)) {
