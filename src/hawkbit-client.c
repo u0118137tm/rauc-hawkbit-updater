@@ -937,7 +937,7 @@ static gpointer download_thread(gpointer data)
                 .install_success = FALSE,
         };
         g_autoptr(GError) error = NULL, feedback_error = NULL;
-        g_autofree gchar *msg = NULL, *sha1sum = NULL;
+        g_autofree gchar *msg = NULL, *sha1sum = NULL, *download_url_extension_check = NULL;
         g_autoptr(Artifact) artifact = data;
         curl_off_t speed;
 
@@ -1040,14 +1040,33 @@ static gpointer download_thread(gpointer data)
                 return GINT_TO_POINTER(TRUE);
         }
 
-        // start installation, cancelations are impossible now
-        active_action->state = ACTION_STATE_INSTALLING;
-        g_cond_signal(&active_action->cond);
-        g_mutex_unlock(&active_action->mutex);
+        g_message("Download URL: %s",artifact->download_url);
+        download_url_extension_check = strrchr(artifact->download_url, '.');
 
-        software_ready_cb(&userdata);
+        // if ((!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")) && hawkbit_config->raucb_check){
+        if (!download_url_extension_check || strcmp(download_url_extension_check, ".raucb")){
+                g_message("Processing tar software update bundle");
 
-        return GINT_TO_POINTER(userdata.install_success);
+                userdata.install_success = TRUE;
+
+                install_complete_cb(&userdata);
+
+                // notify_hawkbit_install_progress(&userdata);
+                // notify_hawkbit_install_complete(&userdata);
+
+                return GINT_TO_POINTER(userdata.install_success);
+        }
+        else{
+
+                // start installation, cancelations are impossible now
+                active_action->state = ACTION_STATE_INSTALLING;
+                g_cond_signal(&active_action->cond);
+                g_mutex_unlock(&active_action->mutex);
+
+                software_ready_cb(&userdata);
+
+                return GINT_TO_POINTER(userdata.install_success);
+        }
 
 report_err:
         g_mutex_lock(&active_action->mutex);
