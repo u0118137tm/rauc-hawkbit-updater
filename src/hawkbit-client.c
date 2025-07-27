@@ -881,8 +881,6 @@ static void process_deployment_cleanup()
 
 gboolean install_complete_cb(gpointer ptr)
 {
-        g_message("Beginning of install_complete_cb");
-
         gboolean res = FALSE;
         g_autoptr(GError) error = NULL;
         struct on_install_complete_userdata *result = ptr;
@@ -954,6 +952,7 @@ static gpointer download_thread(gpointer data)
                 .ssl_verify = hawkbit_config->ssl_verify,
                 .install_success = FALSE,
         };
+        struct on_install_complete_userdata installcomplete_userdata;
         g_autoptr(GError) error = NULL, feedback_error = NULL;
         g_autofree gchar *msg = NULL, *sha1sum = NULL, tarcommand[512];
         g_autoptr(Artifact) artifact = data;
@@ -1077,11 +1076,11 @@ static gpointer download_thread(gpointer data)
                 
                 snprintf(tarcommand, sizeof(tarcommand), "tar -xf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
                 
-                 userdata.install_success = handle_tar_update(&tarcommand);
+                 installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
 
-                 install_complete_cb(&userdata);
+                 install_complete_cb(&installcomplete_userdata);
 
-                 return GINT_TO_POINTER(userdata.install_success);
+                 return GINT_TO_POINTER(installcomplete_userdata.install_success);
                 
 
         }
@@ -1090,23 +1089,23 @@ static gpointer download_thread(gpointer data)
 
                  snprintf(tarcommand, sizeof(tarcommand), "tar -xzf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
 
-                 userdata.install_success = handle_tar_update(&tarcommand);
+                 installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
 
-                 install_complete_cb(&userdata);
+                 install_complete_cb(&installcomplete_userdata);
 
-                 return GINT_TO_POINTER(userdata.install_success);
+                 return GINT_TO_POINTER(installcomplete_userdata.install_success);
         }
         else{
                 g_error("Wrong format! only raucb or tar files are allowed as artifact");
 
-                userdata.install_success = FALSE;
+                installcomplete_userdata.install_success = FALSE;
 
-                install_complete_cb(&userdata);
+                install_complete_cb(&installcomplete_userdata);
 
                 // notify_hawkbit_install_progress(&userdata);
                 // notify_hawkbit_install_complete(&userdata);
 
-                return GINT_TO_POINTER(userdata.install_success);
+                return GINT_TO_POINTER(installcomplete_userdata.install_success);
         }
 
 
