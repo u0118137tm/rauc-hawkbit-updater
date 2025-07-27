@@ -937,7 +937,7 @@ static gpointer download_thread(gpointer data)
                 .install_success = FALSE,
         };
         g_autoptr(GError) error = NULL, feedback_error = NULL;
-        g_autofree gchar *msg = NULL, *sha1sum = NULL;
+        g_autofree gchar *msg = NULL, *sha1sum = NULL, *download_url_extension_check=NULL;
         g_autoptr(Artifact) artifact = data;
         curl_off_t speed;
 
@@ -1039,6 +1039,8 @@ static gpointer download_thread(gpointer data)
 
                 return GINT_TO_POINTER(TRUE);
         }
+
+        g_message("Download URL: %s\n", artifact->download_url);
 
         // start installation, cancelations are impossible now
         active_action->state = ACTION_STATE_INSTALLING;
