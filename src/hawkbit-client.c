@@ -885,10 +885,14 @@ gboolean install_complete_cb(gpointer ptr)
         g_autoptr(GError) error = NULL;
         struct on_install_complete_userdata *result = ptr;
         g_autofree gchar *feedback_url = NULL;
-
+        
+        g_message("Start of install_complete_cb");
+        
         g_return_val_if_fail(ptr, FALSE);
 
         g_mutex_lock(&active_action->mutex);
+
+        g_message("install success: %d", result->install_success);
 
         active_action->state = result->install_success ? ACTION_STATE_SUCCESS : ACTION_STATE_ERROR;
         feedback_url = build_api_url("deploymentBase/%s/feedback", active_action->id);
@@ -901,6 +905,8 @@ gboolean install_complete_cb(gpointer ptr)
 
         if (!res)
                 g_warning("%s", error->message);
+        else    
+                g_message("result of query is 1");
 
         process_deployment_cleanup();
         g_mutex_unlock(&active_action->mutex);
@@ -910,6 +916,8 @@ gboolean install_complete_cb(gpointer ptr)
                 if (reboot(RB_AUTOBOOT) < 0)
                         g_critical("Failed to reboot: %s", g_strerror(errno));
         }
+
+        g_message("End of install_complete_cb");
 
         return G_SOURCE_REMOVE;
 }
