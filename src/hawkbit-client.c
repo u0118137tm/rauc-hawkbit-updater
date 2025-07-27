@@ -1042,6 +1042,15 @@ static gpointer download_thread(gpointer data)
 
         g_message("Download URL: %s\n", artifact->download_url);
 
+        if(strlen(artifact->download_url) > 6 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 6, ".raucb")){
+                g_message("Not a RAUCB");     
+        }
+        else{
+                g_message("IS a RAUCB");   
+        }
+
+
+
         // start installation, cancelations are impossible now
         active_action->state = ACTION_STATE_INSTALLING;
         g_cond_signal(&active_action->cond);
