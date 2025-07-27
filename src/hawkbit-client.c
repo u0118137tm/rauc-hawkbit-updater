@@ -881,6 +881,8 @@ static void process_deployment_cleanup()
 
 gboolean install_complete_cb(gpointer ptr)
 {
+        g_message("Beginning of install_complete_cb");
+
         gboolean res = FALSE;
         g_autoptr(GError) error = NULL;
         struct on_install_complete_userdata *result = ptr;
@@ -922,6 +924,14 @@ gboolean install_complete_cb(gpointer ptr)
         return G_SOURCE_REMOVE;
 }
 
+gboolean handle_tar_update(gchar* tarcommand){
+        if (system(tarcommand) != 0) {
+                fprintf(stderr, "Extraction failed.\n");
+                return TRUE;
+        }
+        return FALSE;
+}
+
 /**
  * @brief Thread to download given Artifact, verfiy its checksum, send hawkBit
  * feedback and call software_ready_cb() callback on success.
@@ -945,7 +955,7 @@ static gpointer download_thread(gpointer data)
                 .install_success = FALSE,
         };
         g_autoptr(GError) error = NULL, feedback_error = NULL;
-        g_autofree gchar *msg = NULL, *sha1sum = NULL;
+        g_autofree gchar *msg = NULL, *sha1sum = NULL, tarcommand[512];
         g_autoptr(Artifact) artifact = data;
         curl_off_t speed;
 
@@ -1062,19 +1072,29 @@ static gpointer download_thread(gpointer data)
 
                 return GINT_TO_POINTER(userdata.install_success);
         }
-        if((strlen(artifact->download_url) > 4 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 4, ".tar")) ||
-                (strlen(artifact->download_url) > 7 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 7, ".tar.gz"))){
-                g_message("Type: Tar update script - handled by install.sh script inside tar");   
-                userdata.install_success = TRUE;
+        else if(strlen(artifact->download_url) > 4 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 4, ".tar")){
+                g_message("Type: Tar update script - handled by install.sh script inside tar");  
+                
+                snprintf(tarcommand, sizeof(tarcommand), "tar -xf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
+                
+                 userdata.install_success = handle_tar_update(&tarcommand);
 
-                install_complete_cb(&userdata);
+                 install_complete_cb(&userdata);
 
-                // notify_hawkbit_install_progress(&userdata);
-                // notify_hawkbit_install_complete(&userdata);
-
-                return GINT_TO_POINTER(userdata.install_success);
+                 return GINT_TO_POINTER(userdata.install_success);
                 
 
+        }
+        else if(strlen(artifact->download_url) > 7 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 7, ".tar.gz")){
+                 g_message("Type: zipped Tar update script - handled by install.sh script inside tar.gz");
+
+                 snprintf(tarcommand, sizeof(tarcommand), "tar -xzf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
+
+                 userdata.install_success = handle_tar_update(&tarcommand);
+
+                 install_complete_cb(&userdata);
+
+                 return GINT_TO_POINTER(userdata.install_success);
         }
         else{
                 g_error("Wrong format! only raucb or tar files are allowed as artifact");
