@@ -937,7 +937,7 @@ static gpointer download_thread(gpointer data)
                 .install_success = FALSE,
         };
         g_autoptr(GError) error = NULL, feedback_error = NULL;
-        g_autofree gchar *msg = NULL, *sha1sum = NULL, *download_url_extension_check=NULL;
+        g_autofree gchar *msg = NULL, *sha1sum = NULL;
         g_autoptr(Artifact) artifact = data;
         curl_off_t speed;
 
@@ -1043,22 +1043,47 @@ static gpointer download_thread(gpointer data)
         g_message("Download URL: %s\n", artifact->download_url);
 
         if(strlen(artifact->download_url) > 6 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 6, ".raucb")){
-                g_message("Not a RAUCB");     
+                g_message("Type: RAUCB bundle - handled by rauc");   
+
+                // start installation, cancelations are impossible now
+                active_action->state = ACTION_STATE_INSTALLING;
+                g_cond_signal(&active_action->cond);
+                g_mutex_unlock(&active_action->mutex);
+
+                software_ready_cb(&userdata);
+
+                return GINT_TO_POINTER(userdata.install_success);
+        }
+        if((strlen(artifact->download_url) > 4 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 4, ".tar")) ||
+                (strlen(artifact->download_url) > 7 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 7, ".tar.gz"))){
+                g_message("Type: Tar update script - handled by install.sh script inside tar");   
+                userdata.install_success = TRUE;
+
+                install_complete_cb(&userdata);
+
+                // notify_hawkbit_install_progress(&userdata);
+                // notify_hawkbit_install_complete(&userdata);
+
+                return GINT_TO_POINTER(userdata.install_success);
+                
+
         }
         else{
-                g_message("IS a RAUCB");   
+                g_error("Wrong format! only raucb or tar files are allowed as artifact");
+
+                userdata.install_success = FALSE;
+
+                install_complete_cb(&userdata);
+
+                // notify_hawkbit_install_progress(&userdata);
+                // notify_hawkbit_install_complete(&userdata);
+
+                return GINT_TO_POINTER(userdata.install_success);
         }
 
 
 
-        // start installation, cancelations are impossible now
-        active_action->state = ACTION_STATE_INSTALLING;
-        g_cond_signal(&active_action->cond);
-        g_mutex_unlock(&active_action->mutex);
 
-        software_ready_cb(&userdata);
-
-        return GINT_TO_POINTER(userdata.install_success);
 
 report_err:
         g_mutex_lock(&active_action->mutex);
