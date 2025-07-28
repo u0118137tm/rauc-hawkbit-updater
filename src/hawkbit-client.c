@@ -890,7 +890,10 @@ gboolean install_complete_cb(gpointer ptr)
         
         g_return_val_if_fail(ptr, FALSE);
 
+        g_message("1");
+
         g_mutex_lock(&active_action->mutex);
+        g_message("2");
 
         g_message("install success: %d", result->install_success);
 
@@ -908,8 +911,12 @@ gboolean install_complete_cb(gpointer ptr)
         else    
                 g_message("result of query is 1");
 
+        g_message("3");
         process_deployment_cleanup();
         g_mutex_unlock(&active_action->mutex);
+
+
+        g_message("4");
 
         if (result->install_success && hawkbit_config->post_update_reboot) {
                 sync();
@@ -1074,9 +1081,11 @@ static gpointer download_thread(gpointer data)
         else if(strlen(artifact->download_url) > 4 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 4, ".tar")){
                 g_message("Type: Tar update script - handled by install.sh script inside tar");  
                 
-                snprintf(tarcommand, sizeof(tarcommand), "tar -xf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
+                // snprintf(tarcommand, sizeof(tarcommand), "tar -xf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
                 
-                 installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
+                //  installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
+
+                installcomplete_userdata.install_success = TRUE;
 
                  install_complete_cb(&installcomplete_userdata);
 
@@ -1087,11 +1096,14 @@ static gpointer download_thread(gpointer data)
         else if(strlen(artifact->download_url) > 7 && !strcmp(artifact->download_url + strlen(artifact->download_url) - 7, ".tar.gz")){
                  g_message("Type: zipped Tar update script - handled by install.sh script inside tar.gz");
 
-                 snprintf(tarcommand, sizeof(tarcommand), "tar -xzf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
+                //  snprintf(tarcommand, sizeof(tarcommand), "tar -xzf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
 
-                 installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
+                //  installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
+                installcomplete_userdata.install_success = TRUE;
 
-                 install_complete_cb(&installcomplete_userdata);
+                install_complete_cb(&installcomplete_userdata);
+
+
 
                  return GINT_TO_POINTER(installcomplete_userdata.install_success);
         }
