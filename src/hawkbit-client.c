@@ -1085,11 +1085,13 @@ static gpointer download_thread(gpointer data)
                 
                 //  installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
 
-                installcomplete_userdata.install_success = TRUE;
+                active_action->state = ACTION_STATE_INSTALLING;
+                g_cond_signal(&active_action->cond);
+                g_mutex_unlock(&active_action->mutex);
 
-                 install_complete_cb(&installcomplete_userdata);
+                install_complete_cb(&installcomplete_userdata);
 
-                 return GINT_TO_POINTER(installcomplete_userdata.install_success);
+                return GINT_TO_POINTER(installcomplete_userdata.install_success);
                 
 
         }
@@ -1099,25 +1101,21 @@ static gpointer download_thread(gpointer data)
                 //  snprintf(tarcommand, sizeof(tarcommand), "tar -xzf %s -C %s", hawkbit_config->bundle_download_location, "/tmp");
 
                 //  installcomplete_userdata.install_success = handle_tar_update(&tarcommand);
-                installcomplete_userdata.install_success = TRUE;
+                active_action->state = ACTION_STATE_INSTALLING;
+                g_cond_signal(&active_action->cond);
+                g_mutex_unlock(&active_action->mutex);
 
                 install_complete_cb(&installcomplete_userdata);
 
-
-
-                 return GINT_TO_POINTER(installcomplete_userdata.install_success);
+                return GINT_TO_POINTER(installcomplete_userdata.install_success);
         }
         else{
                 g_error("Wrong format! only raucb or tar files are allowed as artifact");
 
-                installcomplete_userdata.install_success = FALSE;
-
-                install_complete_cb(&installcomplete_userdata);
-
-                // notify_hawkbit_install_progress(&userdata);
-                // notify_hawkbit_install_complete(&userdata);
-
-                return GINT_TO_POINTER(installcomplete_userdata.install_success);
+                 g_set_error(&error, RHU_HAWKBIT_CLIENT_ERROR, RHU_HAWKBIT_CLIENT_ERROR_DOWNLOAD,
+                            "Software: %s V%s. Invalid file format", artifact->name,
+                            artifact->version);
+                goto report_err;
         }
 
 
